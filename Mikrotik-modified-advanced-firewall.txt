@@ -1,0 +1,76 @@
+/interface list add name=WAN
+
+#LAYER7
+/ip firewall layer7-protocol add name=Youtube regexp="^(.*)(youtube)(.*)\$"
+/ip firewall layer7-protocol add name=facebook regexp="^(.*)(facebook)(.*)\$"
+
+#AJUSTE TIMEOUT 
+/ip firewall connection tracking set tcp-established-timeout=30m
+
+#FILTER INPUT
+/ip firewall filter add action=accept chain=input comment="------------------------ Estabelecidos, Relacionados e ou Untracked ------------------------" connection-state=established,related,untracked
+/ip firewall filter add action=drop chain=input comment="-------------------------- Invalidas" connection-state=invalid
+
+# BLOQUEIO DE CONEXÕES TCP
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- (TCP) RDP Block ------------------------" dst-port=3389 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- FTP/SSH/Telnet/SMTP block" dst-port=20-25 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- HTTP Block" dst-port=80 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- HTTPS Block" dst-port=443 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- PPTP (VPN) Block" dst-port=1723 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- HTTP Proxy Block" dst-port=8080 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- Database Block" dst-port=2000 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- Mikrotik Connection Block" dst-port=8291 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- API/API SSL Block" dst-port=8728-8729 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- DNS TCP Block" dst-port=53 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- Microsoft SQL Block" dst-port=1433 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- MySQL Block" dst-port=3306 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- SMB Block" dst-port=445 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- SMB (over NetBIOS) Block" dst-port=139 in-interface-list=WAN protocol=tcp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- Other Ports (TCP) Block" dst-port=215 in-interface-list=WAN protocol=tcp
+
+# BLOQUEIO DE CONEXÕES UDP
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- (UDP) IKE VPN Block ------------------------" dst-port=500 in-interface-list=WAN protocol=udp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- SNMP Block" dst-port=161 in-interface-list=WAN protocol=udp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- DNS UDP Block" dst-port=53 in-interface-list=WAN protocol=udp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- OpenVPN Block" dst-port=1194 in-interface-list=WAN protocol=udp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- SMB (over NetBIOS) Block" dst-port=137-138 in-interface-list=WAN protocol=udp
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="-------------------------- Other Ports (UDP) Block" dst-port=1711,5678 in-interface-list=WAN protocol=udp
+
+# BLOQUEIO DE PORT SCAN
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=2w chain=input comment="-------------------------- Port Scan TCP --------------------------" in-interface-list=WAN protocol=tcp psd=21,3s,3,1
+/ip firewall filter add action=add-src-to-address-list address-list=port-scanners address-list-timeout=4w2d chain=input comment="--------------------------  PortScan UDP" in-interface-list=WAN protocol=udp psd=21,3s,3,1
+
+# BLOQUEIO DE ATAQUES TCP SYN FLOOD
+/ip firewall filter add action=add-src-to-address-list address-list=SynFlood_Attack address-list-timeout=1w chain=input comment="-------------------------- Syn Flood Attacks Detection --------------------------" connection-limit=30,32 in-interface-list=WAN protocol=tcp tcp-flags=syn
+/ip firewall filter add action=tarpit chain=input protocol=tcp src-address-list=SynFlood_Attack
+
+# RETIRE O COMENTÁRIO DOS CÓDIGOS ABAIXO CASO QUEIRA IMPLEMENTAR O PORT-KNOCKING
+#/ip firewall filter add action=add-src-to-address-list address-list=Port-Knocking-1 address-list-timeout=3s chain=input comment="-------------------------- Port Knock - Porta 1 --------------------------" dst-port=1979 in-interface-list=WAN protocol=tcp
+#/ip firewall filter add action=add-src-to-address-list address-list=Port-Knocking-2 address-list-timeout=3s chain=input comment="-------------------------- Port Knock - Porta 2" dst-port=52003 in-interface-list=WAN protocol=tcp src-address-list=Port-Knocking-1
+#/ip firewall filter add action=add-src-to-address-list address-list=Dispositivos-Permitidos address-list-timeout=4w2d1h chain=input comment="-------------------------- Port Knock - Porta 3" dst-port=4070 in-interface-list=WAN protocol=tcp src-address-list=Port-Knocking-2
+/ip firewall filter add action=accept chain=input comment="--------------------------  LIBERADO" src-address-list=Dispositivos-Permitidos
+
+# CONTROLE DE ICMP
+/ip firewall filter add action=jump chain=input comment="--------------------------  Controle de ICMP --------------------------" in-interface-list=WAN jump-target=ICMP protocol=icmp
+/ip firewall filter add action=accept chain=ICMP comment="--------------------------  Echo request - Avoiding Ping Flood, adjust the limit as needed" icmp-options=8:0 limit=100,5:packet protocol=icmp
+/ip firewall filter add action=accept chain=ICMP comment="--------------------------  Echo reply" icmp-options=0:0 limit=100,5:packet protocol=icmp
+/ip firewall filter add action=accept chain=ICMP comment="--------------------------  Time Exceeded" icmp-options=11:0 limit=100,5:packet protocol=icmp
+/ip firewall filter add action=accept chain=ICMP comment="--------------------------  Destination unreachable" icmp-options=3:0-1 limit=100,5:packet protocol=icmp
+/ip firewall filter add action=accept chain=ICMP comment="--------------------------  PMTUD" icmp-options=3:4 limit=100,5:packet protocol=icmp
+/ip firewall filter add action=drop chain=ICMP comment="--------------------------  Drop to the other ICMPs" protocol=icmp
+
+# SERVIÇOS LIBERADOS (DESABILITADOS POR PADRÃO
+/ip firewall filter add action=accept chain=input comment="-------------------------- L2TP Tunnel IPSec" dst-port=1701,500,4500 in-interface-list=WAN protocol=udp disable=yes
+/ip firewall filter add action=accept chain=input in-interface-list=WAN protocol=ipsec-esp
+/ip firewall filter add action=accept chain=input comment="-------------------------- SSTP" dst-port=1433,443 protocol=tcp disable=yes
+/ip firewall filter add action=accept chain=input comment="========================== DHCP NET" dst-port=68 in-interface-list=WAN protocol=udp disable=yes
+
+# DESCARTA TODOS OS DEMAIS PACOTES NÃO ESPECIFICADOS
+/ip firewall filter add action=drop chain=input comment="-------------------------- DROP GERAL - WAN" in-interface-list=WAN
+
+# CONFIGURA O NAT (DESABILITADO POR PADRÃO)
+/ip firewall nat add action=masquerade chain=srcnat comment="--------------------------  NAT" out-interface-list=WAN disable=yes
+/ip firewall nat add action=src-nat chain=srcnat comment="--------------------------  NAT COM IP FIXO" out-interface-list=WAN to-addresses=0.0.0.0 disable=yes
+
+# DESCARTA TODOS OS PACOTES QUE VEM DE IPS DA LISTA PORT-SCANNERS
+/ip firewall raw add action=drop chain=prerouting comment="--------------------------  PortScan Drop --------------------------" in-interface-list=WAN src-address-list=port-scanners
