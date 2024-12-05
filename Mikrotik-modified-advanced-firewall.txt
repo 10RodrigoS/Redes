@@ -59,11 +59,11 @@
 /ip firewall filter add action=accept chain=ICMP comment="--------------------------  PMTUD" icmp-options=3:4 limit=100,5:packet protocol=icmp
 /ip firewall filter add action=drop chain=ICMP comment="--------------------------  Drop to the other ICMPs" protocol=icmp
 
-# SERVIÇOS LIBERADOS (DESABILITADOS POR PADRÃO
+# SERVIÇOS LIBERADOS (DESABILITADOS POR PADRÃO)
+/ip firewall filter add action=accept chain=input comment="-------------------------- DHCP NET --------------------------" dst-port=68 in-interface-list=WAN protocol=udp disable=yes
 /ip firewall filter add action=accept chain=input comment="-------------------------- L2TP Tunnel IPSec" dst-port=1701,500,4500 in-interface-list=WAN protocol=udp disable=yes
-/ip firewall filter add action=accept chain=input in-interface-list=WAN protocol=ipsec-esp
+/ip firewall filter add action=accept chain=input in-interface-list=WAN protocol=ipsec-esp disabled=yes
 /ip firewall filter add action=accept chain=input comment="-------------------------- SSTP" dst-port=1433,443 protocol=tcp disable=yes
-/ip firewall filter add action=accept chain=input comment="========================== DHCP NET" dst-port=68 in-interface-list=WAN protocol=udp disable=yes
 
 # DESCARTA TODOS OS DEMAIS PACOTES NÃO ESPECIFICADOS
 /ip firewall filter add action=drop chain=input comment="-------------------------- DROP GERAL - WAN" in-interface-list=WAN
